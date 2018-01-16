@@ -1,6 +1,7 @@
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Reshape
+from keras.layers import Dense, Flatten, Reshape, Dropout
+from keras.optimizers import SGD
 from keras import backend as K
 import numpy as np
 import re
@@ -60,6 +61,7 @@ def process(data):
 	return data
 
 def main():
+	# Train Data
 	x_train=[]
 	y_train=[]
 	adult_file=open("adult.data",'r')
@@ -70,16 +72,16 @@ def main():
 		x_train.append(data[:len(data)-1])
 		y_train.append(data[-1])
 	x_train=np.array(x_train)
-	print (y_train[7])
 	y_train=np.array(y_train)
+
+	# Model
 	model = Sequential()
-	model.add(Dense(64, activation='relu', input_shape=(14,)))
-	model.add(Dense(32, activation='relu'))
-	model.add(Dense(16, activation='relu'))
+	model.add(Dense(14, activation='relu', input_shape=(14,)))
+	model.add(Dense(14, activation='relu', input_shape=(14,)))
 	model.add(Dense(1, activation='softmax'))
 
 	model.compile(loss='binary_crossentropy',
-              optimizer='rmsprop',
+              optimizer='sgd',
               metrics=['accuracy'])
 
 	model.fit(x_train, y_train,
@@ -87,12 +89,20 @@ def main():
 	          batch_size=128,
 	          verbose=1)
 
-	x_test = np.array([x_train[7]])
-	print (x_test)
-	y_test = np.array([y_train[7]])
-	# evaluate loaded model on test data
-	#loaded_model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
-	score = model.evaluate(x_test, y_test, verbose=0)
+	x_test=[]
+	y_test=[]
+	adult_file=open("adult.test",'r')
+	for line in adult_file:
+		#line=adult_file.readline()
+		data = line.replace(' ','').rstrip().split(",")
+		data=process(data)
+		x_test.append(data[:len(data)-1])
+		y_test.append(data[-1])
+	x_test=np.array(x_test)
+	y_test=np.array(y_test)
+
+	score = model.evaluate(x_test, y_test)
+	print("Evaluate results: ")
 	print("%s: %.2f" % (model.metrics_names[0], score[0]*100))
 	print("%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 
