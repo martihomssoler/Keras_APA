@@ -1,17 +1,4 @@
-#####################################
-# APA Laboratori 8                 ##
-## Random Forests                  ##
-## version of January, 2018        ## 
-#####################################
-
-
-####################################################################
-# Financial Example: classification model for adults subscription
-####################################################################
-
-## Direct marketing campaigns (phone calls) of a Portuguese banking institution. 
-## The classification goal is to predict if the client will subscribe a term adults
-
+set.seed(1313)
 adults <- read.table("groupedall.txt", sep=",", dec=".", header=FALSE)
 
 dim(adults)
@@ -33,7 +20,6 @@ adults[["capitalloss"]] <- ordered(cut(adults$capitalloss,c(-Inf, 0,
                                                             Inf)), labels = c(0,1,2))
 
 
-# precalculate the TR/TE partition and the cross-validation partitions on the TR part
 
 N <- nrow(adults)
 all.indexes <- 1:N
@@ -48,51 +34,32 @@ ntest <- N - nlearn
 
 harm <- function (a,b) { 2/(1/a+1/b) }
 
-# percent by class
-prop.table(ct, 1)
-# total percent correct
-sum(diag(ct))/sum(ct)
-
-# test error is 
-
-round(100*(1-sum(diag(ct))/sum(ct)),2)
-
-# not very good, because the 'yes' class is nearly ignored
-(F1 <- harm (prop.table(ct,1)[1,1], prop.table(ct,1)[2,2]))
-
-## Now a random Forest
 library(randomForest)
-
+set.seed(1313)
 model.rf1 <- randomForest(as.factor(morefifty) ~ ., data = learn.data, ntree=100, proximity=FALSE)
 
 model.rf1
 
-## We get an estimated test error (OOB) of 9.3%, so better; let's compute the real test error:
 
 pred.rf1 <- predict (model.rf1, adults[test.indexes,], type="class")
 
 (ct <- table(Truth=adults$morefifty[test.indexes], Pred=pred.rf1))
 
-# percent by class
 prop.table(ct, 1)
 # total percent correct
 sum(diag(ct))/sum(ct)
 
-# real test error is 
 
 round(100*(1-sum(diag(ct))/sum(ct)),2)
 
 (F1 <- harm (prop.table(ct,1)[1,1], prop.table(ct,1)[2,2]))
 
-## So OOB really works in estimating prediction error and the RF is better than a single tree; 
-## however, there is a big issue in the unbalanced classes
-
+set.seed(1313)
 # one way to deal with this is to include class weights
 model.rf2 <- randomForest(as.factor(morefifty) ~ ., data = learn.data, ntree=100, proximity=FALSE, classwt=c(1,10))
 
 model.rf2
 
-# which helps a little bit, but not much: we get estimated test error (OOB) of 9.86% with a better balance; let's compute the real test error:
 
 pred.rf2 <- predict (model.rf2, adults[test.indexes,], type="class")
 
@@ -109,3 +76,48 @@ round(100*(1-sum(diag(ct))/sum(ct)),2)
 
 (F1 <- harm (prop.table(ct,1)[1,1], prop.table(ct,1)[2,2]))
 plot(model.rf1)
+
+
+(ntrees <- round(10^seq(1,3,by=0.2)))
+
+rf.results <- matrix (rep(0,2*length(ntrees)),nrow=length(ntrees))
+colnames (rf.results) <- c("ntrees", "OOB")
+rf.results[,"ntrees"] <- ntrees
+rf.results[,"OOB"] <- 0
+
+ii <- 1
+
+for (nt in ntrees)
+{ 
+  print(nt)
+  set.seed(1313)
+  model.rf <- randomForest(morefifty ~ ., data = learn.data, ntree=nt, proximity=FALSE, 
+                           classwt=c(1,10), strata=learn.data$morefifty)
+  
+  # get the OOB
+  rf.results[ii,"OOB"] <- model.rf$err.rate[nt,1]
+  
+  ii <- ii+1
+}
+
+plot(rf.results,type="o", col="blue")
+
+# choose best value of 'ntrees'
+
+lowest.OOB.error <- as.integer(which.min(rf.results[,"OOB"]))
+(ntrees.best <- rf.results[lowest.OOB.error,"ntrees"])
+set.seed(1313)
+# one way to deal with this is to include class weights
+model.rf2 <- randomForest(as.factor(morefifty) ~ ., data = learn.data, ntree=ntrees.best, proximity=FALSE, classwt=c(1,10))
+
+model.rf2
+
+
+pred.rf2 <- predict (model.rf2, adults[test.indexes,], type="class")
+
+(ct <- table(Truth=adults$morefifty[test.indexes], Pred=pred.rf2))
+
+# percent by class
+prop.table(ct, 1)
+# total percent correct
+1-sum(diag(ct))/sum(ct)
