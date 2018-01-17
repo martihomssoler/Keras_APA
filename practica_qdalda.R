@@ -26,6 +26,7 @@ colnames(adults) <- make.names(colnames(adults))
 
 adults$morefifty<- as.factor(adults$morefifty)
 adults$educationnum<-NULL
+adults$fnlwgt<-NULL
 
 adults[["capitalgain"]] <- ordered(cut(adults$capitalgain,c(-Inf, 0, 
                                                           median(adults[["capitalgain"]][adults[["capitalgain"]] >0]), 
@@ -56,6 +57,7 @@ plot(lda.model)
 # alternatively, we can do it ourselves, with more control on color and text (adults number)
 
 adults.pred <- predict(lda.model)
+
 plot(adults.pred$x,type="n")
 #as.character(rownames(adults.pred$x))
 text(adults.pred$x,labels="o",col=as.integer(adults$morefifty))
@@ -63,22 +65,20 @@ legend('bottomright', c("<=50k",">50k"), lty=1, col=c('black', 'red'), bty='n', 
 
 # If need be, we can add the (projected) means to the plot
 
-plot.mean <- function (class)
-{
-  m1 <- mean(subset(adults.pred$x[,1],adults$morefifty==class))
-  m2 <- mean(subset(adults.pred$x[,2],adults$morefifty==class))
-  print(c(m1,m2))
-  points(m1,m2,pch=16,cex=2,col=as.integer(class))
-}
 
-
-table(adults$morefifty, adults.pred$class)
+tab<-table(adults$morefifty, adults.pred$class)
+tab
+1 - sum(tab[row(tab)==col(tab)])/sum(tab)
 
 # Let us switch to leave-one-out cross-validation
 
 adults.predcv <- update(lda.model,CV=TRUE)
-head(adults.predcv$posterior)
-print(table(adults$morefifty,adults.predcv$class))
+
+tab<-table(adults$morefifty,adults.predcv$class)
+tab
+1 - sum(tab[row(tab)==col(tab)])/sum(tab)
+
+
 
 # 2 mistakes (on 178 observations): 1.12% error
 
@@ -94,26 +94,17 @@ qda.model
 # but let's have a look at classification:
 
 adults.pred <- predict(qda.model)
-table(adults$morefifty, adults.pred$class)
+tab<-table(adults$morefifty, adults.pred$class)
+tab
+1 - sum(tab[row(tab)==col(tab)])/sum(tab)
 
 # Let us switch to leave-one-out cross-validation
 
 adults.predcv <- update(qda.model,CV=TRUE)
-head(adults.predcv$posterior)
+tab<-table(adults$morefifty,adults.predcv$class)
+tab
+1 - sum(tab[row(tab)==col(tab)])/sum(tab)
 
-print(table(adults$morefifty,adults.predcv$class))
-
-# 1 mistake (on 178 observations): 0.56% error
-
-# it would be nice to ascertain which adults is the "stubborn" one: it is a adults of type '2' classified
-# as class '1'. Maybe there is something special with this adults ...
-
-# In the event of numerical errors (e.g., insufficient number of observations per class) and only in this case, we can use 'rda', as in:
-
-library(klaR)
-
-
-# Note gamma=0, lambda=1 corresponds to LDA and gamma=0, lambda=0 to QDA
 
 ####################################################################
 # Example 2: The Naïve Bayes classifier
@@ -123,10 +114,6 @@ library (e1071)
 
 
 N <- nrow(adults)
-
-## We first split the available data into learning and test sets, selecting randomly 2/3 and 1/3 of the data
-## We do this for a honest estimation of prediction performance
-
 learn <- sample(1:N, round(2*N/3))
 
 nlearn <- length(learn)
@@ -135,15 +122,7 @@ ntest <- N - nlearn
 # First we build a model using the learn data
 
 model <- naiveBayes(morefifty ~ ., data = adults[learn,])
-
-# we get all the probabilities
 model
-
-# predict the outcome of the first 20 Congressmen
-predict(model, adults[1:20,-1]) 
-
-# same but displaying posterior probabilities
-predict(model, adults[1:20,-1], type = "raw") 
 
 # compute now the apparent error
 pred <- predict(model, adults[learn,-1])
