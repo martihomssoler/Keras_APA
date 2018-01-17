@@ -26,7 +26,6 @@ colnames(adults) <- make.names(colnames(adults))
 
 adults$morefifty<- as.factor(adults$morefifty)
 adults$educationnum<-NULL
-adults$fnlwgt<-NULL
 
 adults[["capitalgain"]] <- ordered(cut(adults$capitalgain,c(-Inf, 0, 
                                                           median(adults[["capitalgain"]][adults[["capitalgain"]] >0]), 
