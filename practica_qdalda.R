@@ -14,21 +14,29 @@ library(MASS)
 ## The analysis determined the quantities of 13 chemical constituents found in each of the three types of adultss. 
 ## The goal is to separate the three types of adultss:
 
-adults <- read.table("out.txt", sep=",", dec=".", header=FALSE)
+adults <- read.table("groupedall.txt", sep=",", dec=".", header=FALSE)
 
 dim(adults)
 
-colnames(adults) <- c('age','workclass','fnlwgt','education','education-num','marital-status','occupation',
-                    'relationship','race','sex','capital-gain','capital-loss','hours-per-week','native-country','morefifty')
+colnames(adults) <- c('age','workclass','fnlwgt','education','educationnum','maritalstatus','occupation',
+                    'relationship','race','sex','capitalgain','capitalloss','hoursperweek','nativecountry','morefifty')
 
 # Clean up column names
 colnames(adults) <- make.names(colnames(adults))
 
 adults$morefifty<- as.factor(adults$morefifty)
+adults$educationnum<-NULL
+
+adults[["capitalgain"]] <- ordered(cut(adults$capitalgain,c(-Inf, 0, 
+                                                          median(adults[["capitalgain"]][adults[["capitalgain"]] >0]), 
+                                                          Inf)),labels = c(0,1,2))
+adults[["capitalloss"]] <- ordered(cut(adults$capitalloss,c(-Inf, 0, 
+                                                          median(adults[["capitalloss"]][adults[["capitalloss"]] >0]), 
+                                                          Inf)), labels = c(0,1,2))
 
 summary(adults)
 ## DO IT
-plot(subset(adults,select=-morefifty),col=unclass(adults$morefifty))
+#plot(subset(adults,select=-morefifty),col=unclass(adults$morefifty))
 
 ## For this example let's practice a different call mode to lda(), using a formula; this is most useful
 ## when our data is in a dataframe format: 
@@ -51,7 +59,7 @@ adults.pred <- predict(lda.model)
 plot(adults.pred$x,type="n")
 #as.character(rownames(adults.pred$x))
 text(adults.pred$x,labels="o",col=as.integer(adults$morefifty))
-legend('bottomright', c("Cultivar 1","Cultivar 2","Cultivar 3"), lty=1, col=c('black', 'red', 'green'), bty='n', cex=.75)
+legend('bottomright', c("<=50k",">50k"), lty=1, col=c('black', 'red'), bty='n', cex=.75)
 
 # If need be, we can add the (projected) means to the plot
 
@@ -63,11 +71,6 @@ plot.mean <- function (class)
   points(m1,m2,pch=16,cex=2,col=as.integer(class))
 }
 
-plot.mean ('1')
-plot.mean ('2')
-plot.mean ('3')
-
-# indeed classification is perfect
 
 table(adults$morefifty, adults.pred$class)
 
@@ -86,7 +89,6 @@ print(table(adults$morefifty,adults.predcv$class))
 qda.model <- qda (morefifty ~ ., data = adults)
 
 qda.model
-
 ## There is no projection this time (because projection is a linear operator and the QDA boundaries are quadratic ones)
 
 # but let's have a look at classification:
@@ -109,7 +111,7 @@ print(table(adults$morefifty,adults.predcv$class))
 # In the event of numerical errors (e.g., insufficient number of observations per class) and only in this case, we can use 'rda', as in:
 
 library(klaR)
-(rda.model <- rda (adults.type ~ ., data = adults,  lambda = 1))
+
 
 # Note gamma=0, lambda=1 corresponds to LDA and gamma=0, lambda=0 to QDA
 
@@ -118,24 +120,6 @@ library(klaR)
 ####################################################################
 
 library (e1071)
-
-## Naive Bayes Classifier for Discrete Predictors: we use the 
-## 1984 United States Congressional Voting Records; 
-
-## This data set includes votes for each of the U.S. House of Representatives Congressmen on 16 key votes
-## In origin they were nine different types of votes: 
-##     * voted for, paired for, and announced for (these three simplified to yea or 'y'),
-##     * voted against, paired against, and announced against (these three simplified to nay or 'n'), 
-##     * voted present, voted present to avoid conflict of interest, and did not vote or otherwise make a position known 
-##       (these three simplified to an 'unknown' disposition)
-
-## The goal is to classify Congressmen as Republican or Democrat as a function of their voting profiles,
-## which is not immediate because in the US Congressmen have a large freedom of vote 
-## (obviously linked to their party but also to their own feelings, interests and compromises with voters)
-
-
-## 1 = democrat, 0 = republican
-## Note "unknown dispositions" have been treated as missing values!
 
 
 N <- nrow(adults)

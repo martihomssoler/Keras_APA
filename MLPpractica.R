@@ -1,17 +1,26 @@
 library(MASS)
 library(nnet)
 #Executem per una llavor en concret, per tenir els mateixos resultats.
-adults <- read.table("out.txt", sep=",", dec=".", header=FALSE)
+adults <- read.table("groupedall.txt", sep=",", dec=".", header=FALSE)
 
 dim(adults)
 
-colnames(adults) <- c('age','workclass','fnlwgt','education','education-num','marital-status','occupation',
-                      'relationship','race','sex','capital-gain','capital-loss','hours-per-week','native-country','morefifty')
+colnames(adults) <- c('age','workclass','fnlwgt','education','educationnum','maritalstatus','occupation',
+                      'relationship','race','sex','capitalgain','capitalloss','hoursperweek','nativecountry','morefifty')
 
 # Clean up column names
 colnames(adults) <- make.names(colnames(adults))
 
 adults$morefifty<- as.factor(adults$morefifty)
+adults$educationnum<-NULL
+
+adults[["capitalgain"]] <- ordered(cut(adults$capitalgain,c(-Inf, 0, 
+                                                            median(adults[["capitalgain"]][adults[["capitalgain"]] >0]), 
+                                                            Inf)),labels = c(0,1,2))
+adults[["capitalloss"]] <- ordered(cut(adults$capitalloss,c(-Inf, 0, 
+                                                            median(adults[["capitalloss"]][adults[["capitalloss"]] >0]), 
+                                                            Inf)), labels = c(0,1,2))
+
 
 
 N <- nrow(adults)
