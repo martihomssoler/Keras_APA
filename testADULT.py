@@ -1,12 +1,9 @@
+import numpy as np
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Reshape, Dropout
 from keras.optimizers import SGD
 from keras import backend as K
-import numpy as np
-import re
-import requests as R
-import json
 
 """
 age: continuous.
@@ -77,12 +74,12 @@ def main():
 	# Model
 	model = Sequential()
 	model.add(Dense(14, activation='relu', input_shape=(14,)))
-	model.add(Dense(14, activation='relu', input_shape=(14,)))
+	model.add(Dense(7, activation='relu'))
 	model.add(Dense(1, activation='softmax'))
 
 	model.compile(loss='binary_crossentropy',
-              optimizer='sgd',
-              metrics=['accuracy'])
+				  optimizer='sdm',
+            	  metrics=['acc'])
 
 	model.fit(x_train, y_train,
 	          epochs=20,
